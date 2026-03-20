@@ -1,11 +1,170 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nursery Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <header class="bg-white border-b">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-black">Nursery Admin</h1>
+        <p class="text-sm text-slate-500">Manage products, stock, featured items, and export data.</p>
+      </div>
+      <a href="index.html" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50 font-medium">
+        Open store
+      </a>
+    </div>
+  </header>
 
-<body>
-  <h2>Admin Panel</h2>
-  <p>Coming soon (for adding products)</p>
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div id="login-card" class="max-w-md mx-auto bg-white border rounded-3xl p-6 shadow-sm">
+      <h2 class="text-xl font-bold mb-2">Admin login</h2>
+      <p class="text-sm text-slate-500 mb-4">
+        Enter the admin passcode to manage products.
+      </p>
+
+      <input
+        id="admin-pass"
+        type="password"
+        class="w-full px-4 py-3 border rounded-xl mb-3"
+        placeholder="Enter admin passcode"
+      />
+
+      <button
+        id="login-btn"
+        class="w-full px-4 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700"
+      >
+        Login
+      </button>
+
+      <p class="text-xs text-slate-500 mt-3">
+        Default passcode: <strong>owner-pass</strong>
+      </p>
+    </div>
+
+    <div id="admin-panel" class="hidden space-y-6">
+      <section class="grid lg:grid-cols-3 gap-4">
+        <div class="bg-white border rounded-3xl p-5">
+          <div class="text-sm text-slate-500">Total products</div>
+          <div id="stat-products" class="text-3xl font-black mt-1">0</div>
+        </div>
+        <div class="bg-white border rounded-3xl p-5">
+          <div class="text-sm text-slate-500">Featured products</div>
+          <div id="stat-featured" class="text-3xl font-black mt-1">0</div>
+        </div>
+        <div class="bg-white border rounded-3xl p-5">
+          <div class="text-sm text-slate-500">Low stock items</div>
+          <div id="stat-low-stock" class="text-3xl font-black mt-1">0</div>
+        </div>
+      </section>
+
+      <section class="bg-white border rounded-3xl p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-2xl font-bold">Add / edit product</h2>
+            <p class="text-sm text-slate-500">Save products locally in the browser for now.</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="new-btn" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50">New form</button>
+            <button id="save-sample-btn" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50">Reset sample products</button>
+          </div>
+        </div>
+
+        <form id="product-form" class="grid md:grid-cols-2 gap-3">
+          <input type="hidden" id="prod-id" />
+
+          <input id="prod-name" class="px-4 py-3 border rounded-xl" placeholder="Product name" required />
+          <input id="prod-category" class="px-4 py-3 border rounded-xl" placeholder="Category" required />
+
+          <input id="prod-price" type="number" step="0.01" class="px-4 py-3 border rounded-xl" placeholder="Price" required />
+          <input id="prod-stock" type="number" class="px-4 py-3 border rounded-xl" placeholder="Stock quantity" required />
+
+          <input id="prod-image" class="px-4 py-3 border rounded-xl md:col-span-2" placeholder="Image URL" />
+
+          <textarea id="prod-desc" class="px-4 py-3 border rounded-xl md:col-span-2" rows="4" placeholder="Description"></textarea>
+
+          <input id="prod-sun" class="px-4 py-3 border rounded-xl" placeholder="Sunlight requirement" />
+          <input id="prod-water" class="px-4 py-3 border rounded-xl" placeholder="Watering guide" />
+
+          <input id="prod-care" class="px-4 py-3 border rounded-xl" placeholder="Care level (Easy, Medium, Hard)" />
+          <input id="prod-sku" class="px-4 py-3 border rounded-xl" placeholder="SKU / internal code" />
+
+          <label class="flex items-center gap-2 md:col-span-2">
+            <input id="prod-featured" type="checkbox" class="w-4 h-4" />
+            <span class="text-sm">Mark as featured product</span>
+          </label>
+
+          <div class="md:col-span-2 flex gap-3">
+            <button class="px-5 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700" type="submit">
+              Save product
+            </button>
+            <button id="clear-form-btn" class="px-5 py-3 rounded-xl border bg-white hover:bg-slate-50" type="button">
+              Clear
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white border rounded-3xl p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-2xl font-bold">Products</h2>
+            <p class="text-sm text-slate-500">Edit, delete, or feature items shown on the homepage.</p>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="export-json-btn" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50">
+              Export JSON
+            </button>
+            <label class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50 cursor-pointer">
+              Import JSON
+              <input id="import-json-input" type="file" accept="application/json" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left border-b">
+                <th class="py-3 pr-3">Name</th>
+                <th class="py-3 pr-3">Category</th>
+                <th class="py-3 pr-3">Price</th>
+                <th class="py-3 pr-3">Stock</th>
+                <th class="py-3 pr-3">Featured</th>
+                <th class="py-3 pr-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="bg-white border rounded-3xl p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-2xl font-bold">Orders</h2>
+            <p class="text-sm text-slate-500">Orders are stored locally in the browser for now.</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="export-orders-btn" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50">
+              Export orders CSV
+            </button>
+            <button id="clear-orders-btn" class="px-4 py-2 rounded-xl border bg-white hover:bg-slate-50 text-red-600">
+              Clear orders
+            </button>
+          </div>
+        </div>
+
+        <div id="orders-list" class="space-y-3"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
 </body>
 </html>
