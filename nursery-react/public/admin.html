@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Nursery Store — plants, pots, soil, tools, and garden supplies. Contact the owner on WhatsApp, call, or email." />
+  <title>Nursery Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-green-50 text-slate-900 min-h-screen">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">🌿</div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight">Nursery Store</h1>
+          <p class="text-xs text-slate-500">Plants, pots, soil, tools, and care advice</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="#contact" class="hidden sm:inline-flex px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">Contact</a>
+        <a href="admin.html" class="px-3 py-2 rounded-lg border bg-white hover:bg-slate-50 text-sm">Admin</a>
+        <button id="cart-btn" class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium">
+          Cart (<span id="cart-count">0</span>)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+    <section class="grid lg:grid-cols-2 gap-6 items-center">
+      <div class="space-y-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+          Buy online • Ask on WhatsApp • Pickup in store
+        </span>
+        <h2 class="text-3xl md:text-5xl font-black leading-tight">
+          Find the right plant for every home, balcony, and garden.
+        </h2>
+        <p class="text-slate-600 max-w-xl">
+          Browse indoor plants, outdoor plants, herbs, pots, soil, and garden tools.
+          If you have questions, contact the owner directly from the site.
+        </p>
+
+        <div class="grid sm:grid-cols-3 gap-3">
+          <a href="#products" class="rounded-xl bg-green-600 text-white px-4 py-3 text-center font-medium hover:bg-green-700">Shop now</a>
+          <a id="whatsapp-hero" href="#" class="rounded-xl border bg-white px-4 py-3 text-center font-medium hover:bg-slate-50">WhatsApp</a>
+          <a href="#contact" class="rounded-xl border bg-white px-4 py-3 text-center font-medium hover:bg-slate-50">Ask owner</a>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-3 text-sm">
+          <div class="rounded-xl bg-white border p-3">
+            <div class="font-semibold">Fast help</div>
+            <div class="text-slate-500">Message the owner directly</div>
+          </div>
+          <div class="rounded-xl bg-white border p-3">
+            <div class="font-semibold">Pickup</div>
+            <div class="text-slate-500">Reserve and collect in store</div>
+          </div>
+          <div class="rounded-xl bg-white border p-3">
+            <div class="font-semibold">Care advice</div>
+            <div class="text-slate-500">Sunlight, watering, and more</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border rounded-3xl p-4 shadow-sm">
+        <img
+          src="https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=1200&q=60"
+          alt="Nursery plants"
+          class="w-full h-[340px] object-cover rounded-2xl"
+        />
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-4 gap-3">
+      <button class="category-pill active" data-category="All">All</button>
+      <button class="category-pill" data-category="Indoor">Indoor</button>
+      <button class="category-pill" data-category="Outdoor">Outdoor</button>
+      <button class="category-pill" data-category="Herbs">Herbs</button>
+    </section>
+
+    <section class="bg-white border rounded-3xl p-4 md:p-5">
+      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div>
+          <h3 class="text-2xl font-bold">Search products</h3>
+          <p class="text-slate-500 text-sm">Search by plant name, category, or care need.</p>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+          <input id="search" class="w-full md:w-96 px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-green-200" placeholder="Search plants..." />
+          <button id="clear-search" class="px-4 py-3 rounded-xl border bg-slate-50 hover:bg-slate-100">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="featured-section">
+      <div class="flex items-end justify-between mb-4">
+        <div>
+          <h3 class="text-2xl font-bold">Featured picks</h3>
+          <p class="text-slate-500 text-sm">Popular items and easy care plants.</p>
+        </div>
+      </div>
+      <div id="featured-grid" class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+    </section>
+
+    <section id="products">
+      <div class="flex items-end justify-between mb-4">
+        <div>
+          <h3 class="text-2xl font-bold">All products</h3>
+          <p class="text-slate-500 text-sm">Tap a product to view details or contact the owner.</p>
+        </div>
+      </div>
+      <div id="products-grid" class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+      <p id="no-results" class="hidden text-slate-500 mt-4">No products found.</p>
+    </section>
+
+    <section class="grid lg:grid-cols-2 gap-4">
+      <div class="bg-white border rounded-3xl p-5">
+        <h3 class="text-2xl font-bold mb-3">Why customers will use this store</h3>
+        <ul class="space-y-2 text-slate-600">
+          <li>• Search quickly for the right plant</li>
+          <li>• Contact owner instantly on WhatsApp</li>
+          <li>• Check stock before visiting the shop</li>
+          <li>• View plant care details before buying</li>
+        </ul>
+      </div>
+
+      <div id="contact" class="bg-white border rounded-3xl p-5">
+        <h3 class="text-2xl font-bold mb-3">Contact the owner</h3>
+        <p class="text-slate-600 text-sm mb-4">
+          For availability, bulk orders, landscaping help, or pickup questions, send a message below.
+        </p>
+
+        <form id="contact-form" class="space-y-3">
+          <input id="contact-name" class="w-full px-4 py-3 border rounded-xl" placeholder="Your name" required />
+          <input id="contact-phone" class="w-full px-4 py-3 border rounded-xl" placeholder="Phone number" required />
+          <textarea id="contact-message" class="w-full px-4 py-3 border rounded-xl" rows="4" placeholder="What do you need?" required></textarea>
+          <button class="w-full px-4 py-3 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700">
+            Send enquiry
+          </button>
+        </form>
+
+        <div class="mt-4 text-sm text-slate-500">
+          Store hours: Mon-Sat 9:00 AM - 6:00 PM
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <a id="floating-whatsapp" href="#" target="_blank" rel="noreferrer"
+     class="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-green-600 text-white shadow-lg flex items-center justify-center text-2xl">
+    WhatsApp
+  </a>
+
+  <div id="product-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-xl">
+      <div class="flex justify-between items-center p-4 border-b">
+        <div>
+          <h3 id="modal-title" class="text-xl font-bold"></h3>
+          <p id="modal-category" class="text-sm text-slate-500"></p>
+        </div>
+        <button id="close-modal" class="px-3 py-2 rounded-lg border">Close</button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 p-4">
+        <img id="modal-image" src="" alt="" class="w-full h-72 object-cover rounded-2xl" />
+        <div class="space-y-3">
+          <div class="text-2xl font-black" id="modal-price"></div>
+          <p id="modal-desc" class="text-slate-600"></p>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-slate-500">Sunlight</div>
+              <div class="font-semibold" id="modal-sun"></div>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-slate-500">Watering</div>
+              <div class="font-semibold" id="modal-water"></div>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-slate-500">Stock</div>
+              <div class="font-semibold" id="modal-stock"></div>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-3">
+              <div class="text-slate-500">Care level</div>
+              <div class="font-semibold" id="modal-care"></div>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button id="modal-add-cart" class="flex-1 px-4 py-3 rounded-xl bg-green-600 text-white font-medium">Add to cart</button>
+            <a id="modal-whatsapp" href="#" target="_blank" rel="noreferrer" class="flex-1 px-4 py-3 rounded-xl border text-center font-medium bg-white">Ask on WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside id="cart-drawer" class="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-50 hidden flex-col">
+    <div class="p-4 border-b flex items-center justify-between">
+      <div>
+        <h3 class="text-xl font-bold">Your cart</h3>
+        <p class="text-xs text-slate-500">Save product ideas and place enquiry later.</p>
+      </div>
+      <button id="close-cart" class="px-3 py-2 rounded-lg border">Close</button>
+    </div>
+    <div id="cart-items" class="p-4 space-y-3 overflow-auto flex-1"></div>
+    <div class="p-4 border-t space-y-3">
+      <div class="flex justify-between font-semibold">
+        <span>Total</span>
+        <span id="cart-total">$0.00</span>
+      </div>
+      <button id="cart-whatsapp" class="w-full px-4 py-3 rounded-xl bg-green-600 text-white font-medium">Send cart on WhatsApp</button>
+      <button id="clear-cart" class="w-full px-4 py-3 rounded-xl border">Clear cart</button>
+    </div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
