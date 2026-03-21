@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const ownerName = 'Nursery Store'
-const ownerPhone = '919999999999' // replace with real WhatsApp number, country code only, no +
+const ownerPhone = atob('OTkyOTAxNjQzNg==') 
 const ownerEmail = 'shop@example.com'
 
 const STORAGE_KEYS = {
