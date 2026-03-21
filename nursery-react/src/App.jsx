@@ -704,7 +704,11 @@ export default function App() {
 
       {activeProduct && (
         <div className="overlay" onClick={() => setActiveProduct(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div
+              className="modal-card"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxHeight: '90vh', overflowY: 'auto' }}
+            >
             <div className="modal-header">
               <div>
                 <h3>{activeProduct.name}</h3>
@@ -930,12 +934,13 @@ export default function App() {
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: '18px',
+                    alignItems: 'start',
                   }}
                 >
                   <form
                     onSubmit={saveDraft}
                     className="info-card"
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, maxHeight: '80vh', overflowY: 'auto' }}
                   >
                     <h3 style={{ marginTop: 0, fontSize: '22px' }}>
                       {editingId ? 'Edit product' : 'Add product'}
