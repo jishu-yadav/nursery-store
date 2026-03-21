@@ -311,8 +311,8 @@ export default function App() {
         </div>
 
         <div className="top-actions">
-          <a className="btn btn-secondary" href="#contact">
-            Contact
+          <a href="/admin.html" className="btn btn-secondary">
+            Admin
           </a>
           <button className="btn btn-primary" onClick={() => setCartOpen(true)}>
             Cart ({cartCount})
