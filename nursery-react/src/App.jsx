@@ -1,8 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const ownerName = 'Nursery Store'
-const ownerPhone = '919999999999'
+const ownerPhone = '919999999999' // replace with real WhatsApp number, country code only, no +
 const ownerEmail = 'shop@example.com'
+
+const STORAGE_KEYS = {
+  products: 'nursery_products',
+  cart: 'nursery_cart',
+  adminCode: 'nursery_admin_code',
+  adminSession: 'nursery_admin_session',
+}
 
 const defaultProducts = [
   {
@@ -17,6 +24,7 @@ const defaultProducts = [
     sunlight: 'Low to medium',
     watering: 'Every 10-15 days',
     care: 'Easy',
+    sku: 'IND-001',
   },
   {
     id: 2,
@@ -30,6 +38,7 @@ const defaultProducts = [
     sunlight: 'Indirect light',
     watering: 'Twice a week',
     care: 'Easy',
+    sku: 'IND-002',
   },
   {
     id: 3,
@@ -43,6 +52,7 @@ const defaultProducts = [
     sunlight: 'Bright indirect light',
     watering: 'Weekly',
     care: 'Medium',
+    sku: 'IND-003',
   },
   {
     id: 4,
@@ -56,6 +66,7 @@ const defaultProducts = [
     sunlight: 'Full sun',
     watering: '2-3 times weekly',
     care: 'Medium',
+    sku: 'OUT-001',
   },
   {
     id: 5,
@@ -69,6 +80,7 @@ const defaultProducts = [
     sunlight: 'Bright light',
     watering: 'Keep soil slightly moist',
     care: 'Easy',
+    sku: 'HERB-001',
   },
   {
     id: 6,
@@ -82,6 +94,7 @@ const defaultProducts = [
     sunlight: 'Bright indirect light',
     watering: 'Weekly',
     care: 'Medium',
+    sku: 'IND-004',
   },
 ]
 
@@ -89,26 +102,65 @@ const money = (value) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
+    maximumFractionDigits: 0,
   }).format(value)
 
 const waLink = (text) =>
   `https://wa.me/${ownerPhone}?text=${encodeURIComponent(text)}`
 
-function loadProducts() {
+function safeJSONParse(raw, fallback) {
   try {
-    const saved = localStorage.getItem('nursery_products')
-    return saved ? JSON.parse(saved) : defaultProducts
+    return raw ? JSON.parse(raw) : fallback
   } catch {
-    return defaultProducts
+    return fallback
   }
 }
 
+function normalizeProduct(raw, fallbackId = null) {
+  return {
+    id: Number(raw.id) || fallbackId || Date.now(),
+    name: String(raw.name || '').trim(),
+    category: String(raw.category || 'Indoor').trim(),
+    price: Number(raw.price) || 0,
+    featured: raw.featured === true || raw.featured === 'true',
+    stock: Number(raw.stock) || 0,
+    image:
+      String(raw.image || '').trim() ||
+      'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=900&q=60',
+    description: String(raw.description || '').trim(),
+    sunlight: String(raw.sunlight || 'Not specified').trim(),
+    watering: String(raw.watering || 'Not specified').trim(),
+    care: String(raw.care || 'Not specified').trim(),
+    sku: String(raw.sku || `SKU-${fallbackId || Date.now()}`).trim(),
+  }
+}
+
+function loadProducts() {
+  const stored = safeJSONParse(localStorage.getItem(STORAGE_KEYS.products), null)
+  if (Array.isArray(stored) && stored.length) {
+    return stored.map((p, idx) => normalizeProduct(p, idx + 1))
+  }
+  return defaultProducts
+}
+
 function loadCart() {
-  try {
-    const saved = localStorage.getItem('nursery_cart')
-    return saved ? JSON.parse(saved) : {}
-  } catch {
-    return {}
+  const stored = safeJSONParse(localStorage.getItem(STORAGE_KEYS.cart), {})
+  return stored && typeof stored === 'object' ? stored : {}
+}
+
+function createEmptyDraft() {
+  return {
+    name: '',
+    category: 'Indoor',
+    price: '',
+    featured: true,
+    stock: '',
+    image: '',
+    description: '',
+    sunlight: '',
+    watering: '',
+    care: 'Easy',
+    sku: '',
   }
 }
 
@@ -155,20 +207,31 @@ export default function App() {
   const [activeProduct, setActiveProduct] = useState(null)
   const [cartOpen, setCartOpen] = useState(false)
 
+  const [adminOpen, setAdminOpen] = useState(false)
+  const [adminUnlocked, setAdminUnlocked] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.adminSession) === 'true',
+  )
+  const [adminPass, setAdminPass] = useState('')
+  const [adminError, setAdminError] = useState('')
+  const [draft, setDraft] = useState(createEmptyDraft())
+  const [editingId, setEditingId] = useState(null)
+
+  const importInputRef = useRef(null)
+
   useEffect(() => {
-    localStorage.setItem('nursery_products', JSON.stringify(products))
+    localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(products))
   }, [products])
 
   useEffect(() => {
-    localStorage.setItem('nursery_cart', JSON.stringify(cart))
+    localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(cart))
   }, [cart])
 
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === 'nursery_products') {
+      if (e.key === STORAGE_KEYS.products) {
         setProducts(loadProducts())
       }
-      if (e.key === 'nursery_cart') {
+      if (e.key === STORAGE_KEYS.cart) {
         setCart(loadCart())
       }
     }
@@ -299,6 +362,142 @@ export default function App() {
     e.currentTarget.reset()
   }
 
+  function openAdmin() {
+    setAdminOpen(true)
+    setAdminError('')
+    setAdminPass('')
+  }
+
+  function closeAdmin() {
+    setAdminOpen(false)
+    setAdminError('')
+    setAdminPass('')
+  }
+
+  function handleAdminLogin(e) {
+    e.preventDefault()
+
+    const savedCode = localStorage.getItem(STORAGE_KEYS.adminCode)
+
+    if (!savedCode && adminPass === 'owner-pass') {
+      localStorage.setItem(STORAGE_KEYS.adminCode, 'owner-pass')
+      localStorage.setItem(STORAGE_KEYS.adminSession, 'true')
+      setAdminUnlocked(true)
+      setAdminError('')
+      return
+    }
+
+    if (savedCode && adminPass === savedCode) {
+      localStorage.setItem(STORAGE_KEYS.adminSession, 'true')
+      setAdminUnlocked(true)
+      setAdminError('')
+      return
+    }
+
+    setAdminError('Wrong passcode. Try owner-pass')
+  }
+
+  function logoutAdmin() {
+    localStorage.removeItem(STORAGE_KEYS.adminSession)
+    setAdminUnlocked(false)
+    setAdminError('')
+    setAdminPass('')
+  }
+
+  function startNewProduct() {
+    setDraft(createEmptyDraft())
+    setEditingId(null)
+  }
+
+  function editProduct(product) {
+    setAdminOpen(true)
+    setAdminUnlocked(true)
+    setEditingId(product.id)
+    setDraft({
+      name: product.name || '',
+      category: product.category || 'Indoor',
+      price: String(product.price ?? ''),
+      featured: !!product.featured,
+      stock: String(product.stock ?? ''),
+      image: product.image || '',
+      description: product.description || '',
+      sunlight: product.sunlight || '',
+      watering: product.watering || '',
+      care: product.care || 'Easy',
+      sku: product.sku || '',
+    })
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return
+    setProducts((prev) => prev.filter((p) => Number(p.id) !== Number(id)))
+    if (editingId === id) startNewProduct()
+  }
+
+  function resetSampleProducts() {
+    if (!confirm('Reset all products back to the sample plant list?')) return
+    setProducts(defaultProducts)
+    startNewProduct()
+  }
+
+  function exportProducts() {
+    const blob = new Blob([JSON.stringify(products, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'nursery-products.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function importProductsFromFile(file) {
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+
+      if (!Array.isArray(parsed)) {
+        alert('JSON must be an array of products.')
+        return
+      }
+
+      const cleaned = parsed.map((item, idx) => normalizeProduct(item, idx + 1))
+      setProducts(cleaned)
+      startNewProduct()
+      alert('Products imported.')
+    } catch {
+      alert('Could not import JSON.')
+    }
+  }
+
+  function saveDraft(e) {
+    e.preventDefault()
+
+    if (!draft.name.trim()) {
+      alert('Product name is required.')
+      return
+    }
+
+    const product = normalizeProduct(
+      {
+        ...draft,
+        id: editingId || Date.now(),
+        featured: !!draft.featured,
+      },
+      editingId || Date.now(),
+    )
+
+    setProducts((prev) => {
+      const remaining = prev.filter((p) => Number(p.id) !== Number(product.id))
+      return [product, ...remaining]
+    })
+
+    setEditingId(null)
+    setDraft(createEmptyDraft())
+    alert('Product saved.')
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -311,9 +510,12 @@ export default function App() {
         </div>
 
         <div className="top-actions">
-          <a href="/admin.html" className="btn btn-secondary">
-            Admin
+          <a className="btn btn-secondary" href="#contact">
+            Contact
           </a>
+          <button className="btn btn-secondary" onClick={openAdmin}>
+            Admin
+          </button>
           <button className="btn btn-primary" onClick={() => setCartOpen(true)}>
             Cart ({cartCount})
           </button>
@@ -330,8 +532,8 @@ export default function App() {
               Find the right plant for every home, balcony, and garden.
             </h2>
             <p>
-              Browse indoor plants, outdoor plants, herbs, pots, soil, and garden
-              tools. If you have questions, contact the owner directly from the site.
+              Browse indoor plants, outdoor plants, herbs, and garden essentials.
+              If you have questions, contact the owner directly from the site.
             </p>
 
             <div className="hero-buttons">
@@ -402,10 +604,7 @@ export default function App() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search plants..."
             />
-            <button
-              className="btn btn-secondary"
-              onClick={() => setSearch('')}
-            >
+            <button className="btn btn-secondary" onClick={() => setSearch('')}>
               Clear
             </button>
           </div>
@@ -495,9 +694,7 @@ export default function App() {
 
       <a
         className="floating-whatsapp"
-        href={waLink(
-          `Hello ${ownerName}, I want to ask about your plants.`,
-        )}
+        href={waLink(`Hello ${ownerName}, I want to ask about your plants.`)}
         target="_blank"
         rel="noreferrer"
         aria-label="WhatsApp"
@@ -513,10 +710,7 @@ export default function App() {
                 <h3>{activeProduct.name}</h3>
                 <p>{activeProduct.category}</p>
               </div>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setActiveProduct(null)}
-              >
+              <button className="btn btn-secondary" onClick={() => setActiveProduct(null)}>
                 Close
               </button>
             </div>
@@ -576,10 +770,7 @@ export default function App() {
               <h3>Your cart</h3>
               <p>Save product ideas and place enquiry later.</p>
             </div>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setCartOpen(false)}
-            >
+            <button className="btn btn-secondary" onClick={() => setCartOpen(false)}>
               Close
             </button>
           </div>
@@ -645,6 +836,286 @@ export default function App() {
             </button>
           </div>
         </aside>
+      )}
+
+      {adminOpen && (
+        <div className="overlay" onClick={closeAdmin}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Admin</h3>
+                <p>Manage products for the nursery store</p>
+              </div>
+              <div className="modal-actions">
+                {adminUnlocked && (
+                  <button className="btn btn-secondary" onClick={logoutAdmin}>
+                    Logout
+                  </button>
+                )}
+                <button className="btn btn-secondary" onClick={closeAdmin}>
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {!adminUnlocked ? (
+              <div style={{ padding: '18px' }}>
+                <form onSubmit={handleAdminLogin} className="contact-form">
+                  <input
+                    type="password"
+                    value={adminPass}
+                    onChange={(e) => setAdminPass(e.target.value)}
+                    placeholder="Passcode"
+                    required
+                  />
+                  {adminError && (
+                    <div style={{ color: 'crimson', fontSize: '14px' }}>
+                      {adminError}
+                    </div>
+                  )}
+                  <button className="btn btn-primary full" type="submit">
+                    Login
+                  </button>
+                  <div className="muted small">Default passcode: owner-pass</div>
+                </form>
+              </div>
+            ) : (
+              <div style={{ padding: '18px', display: 'grid', gap: '18px' }}>
+                <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                  <div className="detail-card">
+                    <span>Total products</span>
+                    <strong>{products.length}</strong>
+                  </div>
+                  <div className="detail-card">
+                    <span>Featured</span>
+                    <strong>{products.filter((p) => p.featured).length}</strong>
+                  </div>
+                  <div className="detail-card">
+                    <span>Low stock</span>
+                    <strong>{products.filter((p) => p.stock <= 5).length}</strong>
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button className="btn btn-secondary" onClick={startNewProduct}>
+                    New product
+                  </button>
+                  <button className="btn btn-secondary" onClick={resetSampleProducts}>
+                    Reset sample products
+                  </button>
+                  <button className="btn btn-secondary" onClick={exportProducts}>
+                    Export JSON
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => importInputRef.current?.click()}
+                  >
+                    Import JSON
+                  </button>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) importProductsFromFile(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '18px',
+                  }}
+                >
+                  <form
+                    onSubmit={saveDraft}
+                    className="info-card"
+                    style={{ margin: 0 }}
+                  >
+                    <h3 style={{ marginTop: 0, fontSize: '22px' }}>
+                      {editingId ? 'Edit product' : 'Add product'}
+                    </h3>
+                    <div className="contact-form" style={{ marginTop: '14px' }}>
+                      <input
+                        value={draft.name}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, name: e.target.value }))
+                        }
+                        placeholder="Product name"
+                        required
+                      />
+                      <input
+                        value={draft.category}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, category: e.target.value }))
+                        }
+                        placeholder="Category"
+                        required
+                      />
+                      <input
+                        type="number"
+                        value={draft.price}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, price: e.target.value }))
+                        }
+                        placeholder="Price in INR"
+                        required
+                      />
+                      <input
+                        type="number"
+                        value={draft.stock}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, stock: e.target.value }))
+                        }
+                        placeholder="Stock"
+                        required
+                      />
+                      <input
+                        value={draft.sku}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, sku: e.target.value }))
+                        }
+                        placeholder="SKU"
+                      />
+                      <input
+                        value={draft.image}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, image: e.target.value }))
+                        }
+                        placeholder="Image URL"
+                      />
+                      <input
+                        value={draft.sunlight}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, sunlight: e.target.value }))
+                        }
+                        placeholder="Sunlight"
+                      />
+                      <input
+                        value={draft.watering}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, watering: e.target.value }))
+                        }
+                        placeholder="Watering"
+                      />
+                      <input
+                        value={draft.care}
+                        onChange={(e) =>
+                          setDraft((prev) => ({ ...prev, care: e.target.value }))
+                        }
+                        placeholder="Care level"
+                      />
+                      <textarea
+                        rows="4"
+                        value={draft.description}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Description"
+                      />
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          color: '#475569',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!draft.featured}
+                          onChange={(e) =>
+                            setDraft((prev) => ({
+                              ...prev,
+                              featured: e.target.checked,
+                            }))
+                          }
+                        />
+                        Featured product
+                      </label>
+                      <div className="modal-actions">
+                        <button className="btn btn-primary" type="submit">
+                          Save product
+                        </button>
+                        <button
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={startNewProduct}
+                        >
+                          Clear form
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+
+                  <div className="info-card" style={{ margin: 0 }}>
+                    <h3 style={{ marginTop: 0, fontSize: '22px' }}>Products</h3>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gap: '12px',
+                        marginTop: '14px',
+                        maxHeight: '620px',
+                        overflow: 'auto',
+                        paddingRight: '4px',
+                      }}
+                    >
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '18px',
+                            padding: '14px',
+                            background: '#f8fafc',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              gap: '10px',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 800 }}>{product.name}</div>
+                              <div className="muted small">{product.category}</div>
+                              <div className="muted small">
+                                {money(product.price)} • {product.stock} stock
+                              </div>
+                            </div>
+                            <div className="modal-actions" style={{ alignItems: 'start' }}>
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => editProduct(product)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => deleteProduct(product.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
