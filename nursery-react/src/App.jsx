@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const ownerName = 'Nursery Store'
-const ownerPhone = atob('OTE5ODc2NTQzMjEw') // replace with real number encoded in base64 if needed
+const ownerPhone = atob('OTkyOTAxNjQzNg==') // replace with real number encoded in base64 if needed
 const ownerEmail = 'shop@example.com'
 
 const STORAGE_KEYS = {
