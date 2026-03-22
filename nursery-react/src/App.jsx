@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const ownerName = 'Nursery Store'
-const ownerPhone = atob('OTkyOTAxNjQzNg==') 
+const ownerPhone = atob('OTE5ODc2NTQzMjEw') // replace with real number encoded in base64 if needed
 const ownerEmail = 'shop@example.com'
 
 const STORAGE_KEYS = {
@@ -61,7 +61,7 @@ const defaultProducts = [
     price: 499,
     featured: true,
     stock: 12,
-    image: 'https://images.unsplash.com/photo-1698106471611-a66870afe1be?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    image: 'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=900&q=60',
     description: 'Great for garden beds and flowering borders.',
     sunlight: 'Full sun',
     watering: '2-3 times weekly',
@@ -213,6 +213,12 @@ export default function App() {
   )
   const [adminPass, setAdminPass] = useState('')
   const [adminError, setAdminError] = useState('')
+  const [tapCount, setTapCount] = useState(0)
+
+  const [contactAddress, setContactAddress] = useState('')
+  const [contactMessage, setContactMessage] = useState('')
+  const [cartAddress, setCartAddress] = useState('')
+
   const [draft, setDraft] = useState(createEmptyDraft())
   const [editingId, setEditingId] = useState(null)
 
@@ -238,6 +244,19 @@ export default function App() {
 
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'a') {
+        setAdminOpen(true)
+        setAdminError('')
+        setAdminPass('')
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
   const categories = useMemo(
@@ -320,12 +339,13 @@ export default function App() {
   }
 
   function askAboutProduct(product) {
-    window.open(
-      waLink(
-        `Hello ${ownerName}, I want to ask about ${product.name}. Is it available?`,
-      ),
-      '_blank',
-    )
+    setContactMessage(`I want to ask about ${product.name}. Is it available?`)
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function openContactForProduct(product) {
+    setContactMessage(`I want to ask about ${product.name}. Is it available?`)
+    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   function sendCartOnWhatsApp() {
@@ -334,13 +354,24 @@ export default function App() {
       return
     }
 
+    if (!cartAddress.trim()) {
+      alert('Please enter address')
+      return
+    }
+
     const lines = cartItems.map(
       (item) => `- ${item.name} x ${item.qty} (${money(item.price)})`,
     )
 
-    const msg = `Hello ${ownerName}, I want to order:\n${lines.join(
-      '\n',
-    )}\n\nTotal: ${money(cartTotal)}\nPlease confirm availability and pickup/delivery.`
+    const msg = `Hello ${ownerName},
+I want to order:
+
+${lines.join('\n')}
+
+Total: ${money(cartTotal)}
+Address: ${cartAddress}
+
+Please confirm availability.`
 
     window.open(waLink(msg), '_blank')
   }
@@ -348,30 +379,36 @@ export default function App() {
   function submitContact(e) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
+
     const name = form.get('name')
     const phone = form.get('phone')
+    const address = form.get('address')
     const message = form.get('message')
 
-    window.open(
-      waLink(
-        `Hello ${ownerName}, my name is ${name}. Phone: ${phone}. Message: ${message}`,
-      ),
-      '_blank',
-    )
+    const msg = `Hello ${ownerName},
+Name: ${name}
+Phone: ${phone}
+Address: ${address}
+Message: ${message}`
+
+    window.open(waLink(msg), '_blank')
 
     e.currentTarget.reset()
+    setContactAddress('')
+    setContactMessage('')
   }
 
-  function openAdmin() {
-    setAdminOpen(true)
-    setAdminError('')
-    setAdminPass('')
-  }
-
-  function closeAdmin() {
-    setAdminOpen(false)
-    setAdminError('')
-    setAdminPass('')
+  function handleLogoTap() {
+    setTapCount((prev) => {
+      const next = prev + 1
+      if (next >= 5) {
+        setAdminOpen(true)
+        setAdminError('')
+        setAdminPass('')
+        return 0
+      }
+      return next
+    })
   }
 
   function handleAdminLogin(e) {
@@ -395,6 +432,12 @@ export default function App() {
     }
 
     setAdminError('Wrong passcode. Try owner-pass')
+  }
+
+  function closeAdmin() {
+    setAdminOpen(false)
+    setAdminError('')
+    setAdminPass('')
   }
 
   function logoutAdmin() {
@@ -502,7 +545,18 @@ export default function App() {
     <div className="page">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark">🌿</div>
+          <div
+            className="brand-mark"
+            onClick={handleLogoTap}
+            role="button"
+            tabIndex={0}
+            aria-label="Nursery logo"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleLogoTap()
+            }}
+          >
+            🌿
+          </div>
           <div>
             <h1>Nursery Store</h1>
             <p>Plants, pots, soil, tools, and care advice</p>
@@ -513,9 +567,6 @@ export default function App() {
           <a className="btn btn-secondary" href="#contact">
             Contact
           </a>
-          <button className="btn btn-secondary" onClick={openAdmin}>
-            Admin
-          </button>
           <button className="btn btn-primary" onClick={() => setCartOpen(true)}>
             Cart ({cartCount})
           </button>
@@ -625,7 +676,7 @@ export default function App() {
                 product={product}
                 onView={setActiveProduct}
                 onAdd={addToCart}
-                onContact={askAboutProduct}
+                onContact={openContactForProduct}
               />
             ))}
           </div>
@@ -646,7 +697,7 @@ export default function App() {
                 product={product}
                 onView={setActiveProduct}
                 onAdd={addToCart}
-                onContact={askAboutProduct}
+                onContact={openContactForProduct}
               />
             ))}
           </div>
@@ -675,10 +726,21 @@ export default function App() {
             <form className="contact-form" onSubmit={submitContact}>
               <input name="name" placeholder="Your name" required />
               <input name="phone" placeholder="Phone number" required />
+
+              <input
+                name="address"
+                placeholder="Address"
+                value={contactAddress}
+                onChange={(e) => setContactAddress(e.target.value)}
+                required
+              />
+
               <textarea
                 name="message"
                 rows="4"
                 placeholder="What do you need?"
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
                 required
               />
               <button className="btn btn-primary full" type="submit">
@@ -704,17 +766,16 @@ export default function App() {
 
       {activeProduct && (
         <div className="overlay" onClick={() => setActiveProduct(null)}>
-          <div
-              className="modal-card"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxHeight: '90vh', overflowY: 'auto' }}
-            >
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h3>{activeProduct.name}</h3>
                 <p>{activeProduct.category}</p>
               </div>
-              <button className="btn btn-secondary" onClick={() => setActiveProduct(null)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setActiveProduct(null)}
+              >
                 Close
               </button>
             </div>
@@ -756,7 +817,7 @@ export default function App() {
                   </button>
                   <button
                     className="btn btn-secondary"
-                    onClick={() => askAboutProduct(activeProduct)}
+                    onClick={() => openContactForProduct(activeProduct)}
                   >
                     Ask on WhatsApp
                   </button>
@@ -774,12 +835,22 @@ export default function App() {
               <h3>Your cart</h3>
               <p>Save product ideas and place enquiry later.</p>
             </div>
-            <button className="btn btn-secondary" onClick={() => setCartOpen(false)}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setCartOpen(false)}
+            >
               Close
             </button>
           </div>
 
           <div className="drawer-items">
+            <input
+              className="search"
+              value={cartAddress}
+              onChange={(e) => setCartAddress(e.target.value)}
+              placeholder="Enter delivery/pickup address"
+            />
+
             {cartItems.length ? (
               cartItems.map((item) => (
                 <div key={item.id} className="cart-item">
@@ -844,7 +915,7 @@ export default function App() {
 
       {adminOpen && (
         <div className="overlay" onClick={closeAdmin}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card admin-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <h3>Admin</h3>
@@ -863,7 +934,7 @@ export default function App() {
             </div>
 
             {!adminUnlocked ? (
-              <div style={{ padding: '18px' }}>
+              <div className="admin-inner">
                 <form onSubmit={handleAdminLogin} className="contact-form">
                   <input
                     type="password"
@@ -884,8 +955,8 @@ export default function App() {
                 </form>
               </div>
             ) : (
-              <div style={{ padding: '18px', display: 'grid', gap: '18px' }}>
-                <div className="detail-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <div className="admin-content">
+                <div className="admin-stats">
                   <div className="detail-card">
                     <span>Total products</span>
                     <strong>{products.length}</strong>
@@ -900,7 +971,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="modal-actions">
+                <div className="admin-actions">
                   <button className="btn btn-secondary" onClick={startNewProduct}>
                     New product
                   </button>
@@ -929,23 +1000,13 @@ export default function App() {
                   />
                 </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '18px',
-                    alignItems: 'start',
-                  }}
-                >
-                  <form
-                    onSubmit={saveDraft}
-                    className="info-card"
-                    style={{ margin: 0, maxHeight: '80vh', overflowY: 'auto' }}
-                  >
+                <div className="admin-grid">
+                  <form onSubmit={saveDraft} className="info-card admin-form">
                     <h3 style={{ marginTop: 0, fontSize: '22px' }}>
                       {editingId ? 'Edit product' : 'Add product'}
                     </h3>
-                    <div className="contact-form" style={{ marginTop: '14px' }}>
+
+                    <div className="contact-form admin-form-fields">
                       <input
                         value={draft.name}
                         onChange={(e) =>
@@ -1026,14 +1087,7 @@ export default function App() {
                         }
                         placeholder="Description"
                       />
-                      <label
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          color: '#475569',
-                        }}
-                      >
+                      <label className="check-row">
                         <input
                           type="checkbox"
                           checked={!!draft.featured}
@@ -1046,6 +1100,7 @@ export default function App() {
                         />
                         Featured product
                       </label>
+
                       <div className="modal-actions">
                         <button className="btn btn-primary" type="submit">
                           Save product
@@ -1061,56 +1116,31 @@ export default function App() {
                     </div>
                   </form>
 
-                  <div className="info-card" style={{ margin: 0 }}>
+                  <div className="info-card admin-list">
                     <h3 style={{ marginTop: 0, fontSize: '22px' }}>Products</h3>
-                    <div
-                      style={{
-                        display: 'grid',
-                        gap: '12px',
-                        marginTop: '14px',
-                        maxHeight: '620px',
-                        overflow: 'auto',
-                        paddingRight: '4px',
-                      }}
-                    >
+                    <div className="admin-list-scroll">
                       {products.map((product) => (
-                        <div
-                          key={product.id}
-                          style={{
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '18px',
-                            padding: '14px',
-                            background: '#f8fafc',
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              gap: '10px',
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontWeight: 800 }}>{product.name}</div>
-                              <div className="muted small">{product.category}</div>
-                              <div className="muted small">
-                                {money(product.price)} • {product.stock} stock
-                              </div>
+                        <div key={product.id} className="admin-list-item">
+                          <div>
+                            <div style={{ fontWeight: 800 }}>{product.name}</div>
+                            <div className="muted small">{product.category}</div>
+                            <div className="muted small">
+                              {money(product.price)} • {product.stock} stock
                             </div>
-                            <div className="modal-actions" style={{ alignItems: 'start' }}>
-                              <button
-                                className="btn btn-secondary"
-                                onClick={() => editProduct(product)}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn btn-secondary"
-                                onClick={() => deleteProduct(product.id)}
-                              >
-                                Delete
-                              </button>
-                            </div>
+                          </div>
+                          <div className="modal-actions admin-item-actions">
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => editProduct(product)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => deleteProduct(product.id)}
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
                       ))}
